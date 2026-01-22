@@ -19,21 +19,21 @@ export function AppSidebar({ role: propRole }: { role?: UserRole }) {
   { title: "Notifications", icon: Bell, url: "/citizen/notifications" },
 ];
   const departmentAdminLinks = [
-    { title: 'Dashboard', icon: Home, url: '/dashboard' },
-    { title: 'Department Issues', icon: FileWarning, url: '/department-issues' },
-    { title: 'Staff Management', icon: Users, url: '/staff' },
-    { title: 'Reports', icon: BarChart3, url: '/reports' },
+    { title: 'Dashboard', icon: Home, url: '/departments' },
+    { title: 'Department Issues', icon: FileWarning, url: '/departments/department-issues' },
+    { title: 'Staff Management', icon: Users, url: '/departments/staff' },
+    { title: 'Reports', icon: BarChart3, url: '/departments/reports' },
   ];
 
   const staffLinks = [
-    { title: 'Dashboard', icon: Home, url: '/dashboard' },
-    { title: 'My Tasks', icon: ClipboardList, url: '/my-tasks' },
-    { title: 'Task Map', icon: MapPin, url: '/task-map' },
-    { title: 'Completed', icon: CheckCircle, url: '/completed' },
+    { title: 'Dashboard', icon: Home, url: '/staff' },
+    { title: 'My Tasks', icon: ClipboardList, url: '/staff/tasks' },
+    { title: 'Task Map', icon: MapPin, url: '/staff/task-map' },
+    { title: 'Completed', icon: CheckCircle, url: '/staff/completed' },
   ];
 
   const superAdminLinks = [
-    { title: 'City Overview', icon: MapPin, url: '/dashboard' },
+    { title: 'City Overview', icon: MapPin, url: '/superadmin' },
     { title: 'All Issues', icon: FileWarning, url: '/all-issues' },
     { title: 'User Management', icon: Users, url: '/users' },
     { title: 'Departments', icon: Building2, url: '/departments' },

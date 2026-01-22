@@ -14,8 +14,14 @@ import Notifications from './pages/citizen/Notifications';
 
 
 // Departments
-import DepartmentsDashboard from './pages/departments/DepartmentsDashboard';
-import StaffDashboard from './pages/staff/StaffDashboard';
+import { DepartmentAdminDashboard } from './pages/departments/DepartmentsDashboard';
+import DepartmentIssues from './pages/departments/DepartmentIssues';
+import Reports from './pages/departments/Reports';
+import StaffManagement from './pages/departments/StaffManagement';
+
+
+//Staff
+import { StaffDashboard } from './pages/staff/StaffDashboard';
 
 
 
@@ -37,11 +43,15 @@ function App() {
     </Route>
 
 
-      <Route path="/departments/*" element={<AppLayout />}>
-        <Route index element={<DepartmentsDashboard />} />
-      </Route>
+      <Route path="/departments" element={<AppLayout />}>
+        <Route index element={<DepartmentAdminDashboard />} />
+        <Route path="department-issues" element={<DepartmentIssues />} />
+        <Route path="reports" element={<Reports />} />
+        <Route path="staff" element={<StaffManagement />} />
+     </Route>
 
-      <Route path="/staff/*" element={<AppLayout />}>
+
+      <Route path="/staff" element={<AppLayout />}>
         <Route index element={<StaffDashboard />} />
       </Route>
     </Routes>
