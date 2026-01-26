@@ -15,9 +15,10 @@ import {
    Mail, Lock, Eye, EyeOff, User, Phone, Shield, Wrench, 
   Crown, Building2, ArrowRight, CheckCircle, Users, Zap 
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { type UserRole, type IssueCategory, CATEGORY_LABELS } from '@/types';
 import { toast } from 'sonner';
+import axios from 'axios';
+
 
 const roleOptions: { value: UserRole; label: string; description: string; icon: React.ElementType }[] = [
   { value: 'citizen', label: 'Citizen', description: 'Report issues and earn rewards', icon: User },
@@ -43,7 +44,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { switchRole } = useAuth();
+ 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -67,28 +68,53 @@ export default function Register() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
 
-    if (showDepartmentField && !formData.department) {
-      toast.error('Please select a department');
-      return;
-    }
-    
-    setIsLoading(true);
-    
-    setTimeout(() => {
-      switchRole(formData.role);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  // 1. Validation
+  if (formData.password !== formData.confirmPassword) {
+    toast.error('Passwords do not match');
+    return;
+  }
+
+  if (showDepartmentField && !formData.department) {
+    toast.error('Please select a department');
+    return;
+  }
+  
+  setIsLoading(true);
+  
+  try {
+    // 2. Prepare data for Backend (Mapping frontend names to backend names)
+    const payload = {
+      fullname: formData.name,       // Backend expects 'fullname'
+      email: formData.email,
+      phoneNumber: formData.phone,   // Backend expects 'phoneNumber'
+      password: formData.password,
+      role: formData.role.toUpperCase(), // Backend ENUM is 'CITIZEN', 'STAFF', etc.
+      departmentId: formData.department  // Pass department if exists
+    };
+
+    // 3. Make the actual API call
+    const response = await axios.post('http://localhost:5000/api/auth/register', payload);
+
+    if (response.status === 201) {
       toast.success('Account created successfully!');
-      navigate('/dashboard');
-      setIsLoading(false);
-    }, 1000);
-  };
+      
+      // Optional: You might want to log them in automatically here
+      // or redirect to login page
+      navigate('/login'); 
+    }
+  } catch (error: any) {
+    // 4. Handle Errors
+    const message = error.response?.data?.error || "Registration failed. Please try again.";
+    toast.error(message);
+    console.error("Auth Error:", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const selectedRoleInfo = roleOptions.find(r => r.value === formData.role);
   const SelectedIcon = selectedRoleInfo?.icon || User;

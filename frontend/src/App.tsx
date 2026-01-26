@@ -22,6 +22,9 @@ import StaffManagement from './pages/departments/StaffManagement';
 
 //Staff
 import { StaffDashboard } from './pages/staff/StaffDashboard';
+import Completed from './pages/staff/Completed';
+import MyTasks from './pages/staff/MyTasks';
+import TaskMap from './pages/staff/TaskMap';
 
 
 
@@ -53,6 +56,9 @@ function App() {
 
       <Route path="/staff" element={<AppLayout />}>
         <Route index element={<StaffDashboard />} />
+        <Route path="completed" element={<Completed />} />
+        <Route path="my-tasks" element={<MyTasks />} />
+        <Route path="task-map" element={<TaskMap />} />
       </Route>
     </Routes>
 

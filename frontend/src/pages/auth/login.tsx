@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {  Mail, Lock, Eye, EyeOff, ArrowRight, Shield, CheckCircle } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -14,27 +14,52 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { switchRole } = useAuth();
+ 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    setTimeout(() => {
-      if (email.includes('admin')) {
-        switchRole('super_admin');
-      } else if (email.includes('dept')) {
-        switchRole('department_admin');
-      } else if (email.includes('staff')) {
-        switchRole('staff');
-      } else {
-        switchRole('citizen');
-      }
+    try {
+      // 3. Call your real backend
+      const response = await axios.post('http://localhost:5000/api/auth/login', {
+        email,
+        password
+      });
+
+      const { user } = response.data;
+
+      // 4. Update your Auth Context with real data
+      // This should store the token in localStorage and update the 'user' state
       
-      toast.success('Login successful!');
-      navigate('/dashboard');
+
+      toast.success(`Welcome back, ${user.fullname}!`);
+
+      // 5. Dynamic Navigation based on Role
+      // Use the role coming from your PostgreSQL database
+      switch (user.role) {
+        case 'CITIZEN':
+          navigate('/citizen/');
+          break;
+        case 'STAFF':
+          navigate('/staff/');
+          break;
+        case 'DEPARTMENT_ADMIN':
+          navigate('/departments/');
+          break;
+        case 'SUPER_ADMIN':
+          navigate('/admin/');
+          break;
+        default:
+          navigate('/'); // Fallback
+      }
+
+    } catch (error: any) {
+      const message = error.response?.data?.error || "Invalid email or password";
+      toast.error(message);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

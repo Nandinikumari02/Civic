@@ -27,7 +27,7 @@ export function AppSidebar({ role: propRole }: { role?: UserRole }) {
 
   const staffLinks = [
     { title: 'Dashboard', icon: Home, url: '/staff' },
-    { title: 'My Tasks', icon: ClipboardList, url: '/staff/tasks' },
+    { title: 'My Tasks', icon: ClipboardList, url: '/staff/my-tasks' },
     { title: 'Task Map', icon: MapPin, url: '/staff/task-map' },
     { title: 'Completed', icon: CheckCircle, url: '/staff/completed' },
   ];
