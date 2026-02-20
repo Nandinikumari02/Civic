@@ -1,21 +1,71 @@
 import { Request, Response } from 'express';
-import  {registerUser , loginUser} from '../services/authService';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
-export const handleRegister = async (req: Request, res: Response) => {
+const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key';
+
+// --- 1. CITIZEN REGISTRATION (Public) ---
+export const registerCitizen = async (req: Request, res: Response) => {
   try {
-    const result = await registerUser(req.body);
-    res.status(201).json(result);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    const { fullname, email, phoneNumber, password } = req.body;
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        fullname, email, phoneNumber, passwordHash,
+        role: 'CITIZEN',
+        citizen: { create: {} } // Citizen table link
+      }
+    });
+    res.status(201).json({ message: "Citizen registered successfully" });
+  } catch (error) {
+    res.status(400).json({ error: "Email or Phone already exists" });
   }
 };
 
-export const handleLogin = async (req: Request, res: Response) => {
+// --- 2. CREATE STAFF/ADMIN (Super Admin Only) ---
+export const createStaffOrAdmin = async (req: Request, res: Response) => {
+  try {
+    const { fullname, email, phoneNumber, password, role, departmentId } = req.body;
+    
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const newUser = await prisma.user.create({
+      data: {
+        fullname, email, phoneNumber, passwordHash, role,
+        // Role wise table entry
+        ...(role === 'STAFF' && { staff: { create: { departmentId } } }),
+        ...(role === 'DEPARTMENT_ADMIN' && { departmentAdmin: { create: { departmentId } } })
+      }
+    });
+
+    res.status(201).json({ message: `${role} created successfully` });
+  } catch (error) {
+    res.status(500).json({ error: "Could not create user" });
+  }
+};
+
+// --- 3. UNIVERSAL LOGIN (For Everyone) ---
+export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    const result = await loginUser(email, password);
-    res.status(200).json(result);
-  } catch (error: any) {
-    res.status(401).json({ error: error.message });
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    res.json({ token, role: user.role, fullname: user.fullname });
+  } catch (error) {
+    res.status(500).json({ error: "Login failed" });
   }
 };

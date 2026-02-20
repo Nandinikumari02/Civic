@@ -17,6 +17,7 @@ enum Role {
   CITIZEN
   DEPARTMENT_ADMIN
   STAFF
+  SUPER_ADMIN
 }
 
 enum IssueStatus {
@@ -37,10 +38,10 @@ enum TaskStatus {
 // USER MODEL
 // ===============================
 model User {
-  id           String   @id @default(uuid())
+  id           String @id @default(uuid())
   fullname     String
-  email        String   @unique
-  phoneNumber  String   @unique
+  email        String @unique
+  phoneNumber  String @unique
   passwordHash String
   role         Role
 
@@ -48,8 +49,9 @@ model User {
   staff           Staff?
   departmentAdmin DepartmentAdmin?
 
-  rewards        Reward[]
-  notifications  Notification[]
+  rewards       Reward[]
+  notifications Notification[]
+  timelines     IssueTimeline[]
 
   createdAt DateTime @default(now())
 }
@@ -61,13 +63,14 @@ model Citizen {
 
   issues Issue[]
 }
+
 // ===============================
 // DEPARTMENT MODEL
 // ===============================
 
 model Department {
-  id          String @id @default(uuid())
-  name        String @unique
+  id          String  @id @default(uuid())
+  name        String  @unique
   description String?
 
   staff      Staff[]
@@ -93,8 +96,8 @@ model Staff {
 
   user       User       @relation(fields: [userId], references: [id])
   department Department @relation(fields: [departmentId], references: [id])
-  tasks      Task[]
   issues     Issue[]
+  tasks      Task[]
 }
 
 // ===============================
@@ -119,11 +122,10 @@ model Issue {
   title       String
   description String
   status      IssueStatus @default(OPEN)
-  imageUrl    String?
-
-  latitude  Float
-  longitude Float
-  address   String?
+  images      String?
+  latitude    Float
+  longitude   Float
+  address     String?
 
   // Citizen (who raised)
   citizenId String
@@ -133,12 +135,11 @@ model Issue {
   departmentId String
   department   Department @relation(fields: [departmentId], references: [id])
 
+  staffId String? 
+  staff   Staff?  @relation(fields: [staffId], references: [id])
+
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
-
-  // Staff (who works)
-  staffId String?
-  staff   Staff? @relation(fields: [staffId], references: [id])
 
   task     Task?
   timeline IssueTimeline[]
@@ -157,7 +158,8 @@ model IssueTimeline {
 
   status    IssueStatus
   comment   String?
-  changedBy String
+  userId    String
+  changedBy User        @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
 }
@@ -166,23 +168,22 @@ model IssueTimeline {
 // TASK MODEL
 // ===============================
 model Task {
-  id            String     @id @default(uuid())
-  title         String
-  description   String
-  status        TaskStatus @default(PENDING)
+  id          String     @id @default(uuid())
+  title       String
+  description String
+  status      TaskStatus @default(PENDING)
 
-  staffId       String
-  departmentId  String
+  staffId      String
+  departmentId String
 
-  issueId       String? @unique   
+  issueId String? @unique
 
-  staff         Staff      @relation(fields: [staffId], references: [id])
-  department    Department @relation(fields: [departmentId], references: [id])
-  issue         Issue?     @relation(fields: [issueId], references: [id])
+  staff      Staff      @relation(fields: [staffId], references: [id])
+  department Department @relation(fields: [departmentId], references: [id])
+  issue      Issue?     @relation(fields: [issueId], references: [id])
 
   createdAt DateTime @default(now())
 }
-
 
 // ===============================
 // REWARD MODEL

@@ -3,21 +3,21 @@ import jwt from 'jsonwebtoken';
 
 export const authenticate = (req: any, res: Response, next: NextFunction) => {
   const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ message: 'No token provided' });
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_key');
-    req.user = decoded;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_secret_key');
+    req.user = decoded; // Token ka data request mein save kar liya
     next();
-  } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
+  } catch (err) {
+    res.status(401).json({ message: "Invalid Token" });
   }
 };
 
-export const authorize = (...roles: string[]) => {
+export const checkRole = (roles: string[]) => {
   return (req: any, res: Response, next: NextFunction) => {
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied: Unauthorized role' });
+      return res.status(403).json({ message: "Forbidden: Access Denied" });
     }
     next();
   };
