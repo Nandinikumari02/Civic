@@ -5,14 +5,13 @@ import authRoutes from './routes/authRoutes';
 import deptRoutes from './routes/deptRoutes';
 import issueRoutes from './routes/issueRoutes';
 import taskRoutes from "./routes/taskRoutes";
-
-
-
+import notificationRoutes from './routes/notificationRoutes';
+import rewardRoutes from './routes/rewardRoutes';
 
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 
 //Middlewares
 app.use(cors());
@@ -23,10 +22,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/dept',deptRoutes);
 app.use('/api/issues', issueRoutes);
 app.use("/api/tasks" , taskRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/rewards", rewardRoutes);
 
 
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT ,() => {
-    console.log(`Server is running on http://localhost:${PORT}`)
-})
+

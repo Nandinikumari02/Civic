@@ -61,9 +61,10 @@ export const completeTask = async (req: any, res: Response) => {
 
       // B. Issue Table Update
       if (task.issueId) {
-        await tx.issue.update({
+       const updatedIssue = await tx.issue.update({
           where: { id: task.issueId },
-          data: { status: IssueStatus.RESOLVED }
+          data: { status: IssueStatus.RESOLVED },
+          include: { citizen: true }
         });
 
         // C. Timeline Entry
@@ -75,6 +76,30 @@ export const completeTask = async (req: any, res: Response) => {
             comment:"Task completed by staff."
           }
         });
+        // Issue Resolved Notification
+        await tx.notification.create({
+          data: {
+            userId: updatedIssue.citizen.userId,
+            message: `Great news! Your issue "${updatedIssue.title}" has been RESOLVED.`
+          }
+        });
+
+        //Reward Point Added
+        await tx.reward.create({
+      data: {
+        userId: updatedIssue.citizen.userId,
+        points: 50, // Fix 50 points per resolved issue
+        badgeName: "Contributor"
+      }
+    });
+
+   // Notification For Points
+    await tx.notification.create({
+      data: {
+        userId: updatedIssue.citizen.userId,
+        message: `Congratulations! You earned 50 reward points for your resolved issue.`
+      }
+    });
       }
     });
 

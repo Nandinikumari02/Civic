@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import prisma from "../lib/prisma"; // Aapka prisma client path
+import prisma from "../lib/prisma"; 
 
 // 1. [SUPER ADMIN] - Naya Department banana (e.g. Water, Electricity)
 export const createDepartment = async (req: Request, res: Response) => {
@@ -26,7 +26,7 @@ export const createCategory = async (req: any, res: Response) => {
 
     if (!adminRecord || adminRecord.departmentId !== departmentId) {
       return res.status(403).json({
-        message: "Access Denied: Aap sirf apne department ki categories bana sakte hain.",
+        message: "Access Denied.",
       });
     }
 

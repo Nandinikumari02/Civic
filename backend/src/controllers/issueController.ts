@@ -105,9 +105,25 @@ export const assignIssue = async (req: any, res: Response) => {
       // A. Issue update karein (Status aur Staff)
       const updatedIssue = await tx.issue.update({
         where: { id: issueId },
+        include: { citizen: true, staff: { include: { user: true } } },
         data: {
           staffId: staffId,
           status: "IN_PROGRESS" // IssueStatus enum se
+        }
+      });
+            // 1. Staff ko batana
+      await tx.notification.create({
+        data: {
+          userId: updatedIssue.staff!.userId,
+          message: `New Task: You have been assigned to #${updatedIssue.title}.`
+        }
+      });
+
+      // 2. Citizen ko batana
+      await tx.notification.create({
+        data: {
+          userId: updatedIssue.citizen.userId,
+          message: `Your issue "${updatedIssue.title}" is now IN_PROGRESS. Assigned to: ${updatedIssue.staff?.user.fullname}`
         }
       });
 
