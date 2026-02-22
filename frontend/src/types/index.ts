@@ -5,6 +5,7 @@ export type IssueStatus = 'pending' | 'in_progress' | 'resolved';
 export type IssueCategory = 'water' | 'electricity' | 'roads' | 'sanitation' | 'streetlights' | 'drainage';
 
 export interface User {
+  fullname: any;
   id: string;
   name: string;
   email: string;

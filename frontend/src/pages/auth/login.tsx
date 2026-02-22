@@ -21,42 +21,48 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      // 3. Call your real backend
+      // 1. Backend API Call
       const response = await axios.post('http://localhost:5000/api/auth/login', {
         email,
         password
       });
 
-      const { user } = response.data;
+      // 2. Data Destructuring (Token aur User info nikaalna)
+      const { token, role , fullname } = response.data;
 
-      // 4. Update your Auth Context with real data
-      // This should store the token in localStorage and update the 'user' state
-      
+      // 3. STORAGE: Token aur User info ko browser mein save karna
+      const userData = { token, role, fullname };
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userData));
 
-      toast.success(`Welcome back, ${user.fullname}!`);
 
-      // 5. Dynamic Navigation based on Role
-      // Use the role coming from your PostgreSQL database
-      switch (user.role) {
+      // 4. TOAST: Success message
+      toast.success(`Welcome back, ${fullname}!`);
+
+      // 5. REDIRECT: Role ke hisaab se sahi page par bhejna
+      // Note: Backend se Roles 'CITIZEN', 'STAFF', 'DEPARTMENT_ADMIN', 'SUPER_ADMIN' aate hain
+      switch (role) {
         case 'CITIZEN':
-          navigate('/citizen/');
+          navigate('/citizen');
           break;
         case 'STAFF':
-          navigate('/staff/');
+          navigate('/staff');
           break;
         case 'DEPARTMENT_ADMIN':
-          navigate('/departments/');
+          navigate('/departments');
           break;
         case 'SUPER_ADMIN':
-          navigate('/admin/');
+          navigate('/superadmin'); // App.tsx mein yahi path hai
           break;
         default:
-          navigate('/'); // Fallback
+          navigate('/');
       }
 
     } catch (error: any) {
+      // 6. ERROR HANDLING
       const message = error.response?.data?.error || "Invalid email or password";
       toast.error(message);
+      console.error("Login Error:", error);
     } finally {
       setIsLoading(false);
     }

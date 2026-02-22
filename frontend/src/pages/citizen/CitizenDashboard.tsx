@@ -1,9 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
-import { mockIssues } from '@/data/mockData';
+import { useState, useEffect, useCallback } from 'react';
+import { issueService } from '@/services/issueService'; // SERVICE IMPORT
 import { IssueCard } from '@/components/citizen/IssueCard';
 import { ReportIssueDialog } from '@/components/citizen/ReportIssueDialog';
 import { StatsCard } from '@/components/shared/StatsCard';
-import { FileWarning, CheckCircle2, Clock, TrendingUp, ArrowRight } from 'lucide-react';
+import { FileWarning, CheckCircle2, Clock, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,102 +12,141 @@ import { Progress } from '@/components/ui/progress';
 
 export function CitizenDashboard() {
   const { user } = useAuth();
+  const [issues, setIssues] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const pendingIssues = mockIssues.filter((i) => i.status === 'pending');
-  const recentIssues = mockIssues.slice(0, 3);
-  const userPoints = user.points || 0;
-  const nextBadgePoints = 500;
-  const progress = (userPoints / nextBadgePoints) * 100;
+  // 1. Fetch function using IssueService
+  const fetchIssues = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      // service use karne se code saaf rehta hai aur token auto-handle hota hai
+      const response = await issueService.getMyIssues();
+      setIssues(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Dashboard Fetch Error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchIssues();
+  }, [fetchIssues]);
+
+  // 2. Stats Calculation (Backend Statuses se match karte hue)
+  const totalReports = issues.length;
+  const resolvedCount = issues.filter((i) => i.status === 'RESOLVED').length;
+  // OPEN, IN_PROGRESS, aur PENDING teeno ko 'Pending' count mein liya hai
+  const pendingCount = issues.filter((i) => ['OPEN', 'IN_PROGRESS', 'PENDING'].includes(i.status)).length;
+  
+  // Sirf latest 3 issues dashboard par dikhane ke liye
+  const recentIssues = [...issues]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 3);
+  
+  // 3. Rewards Calculation
+  const userPoints = user?.points || 0;
+  const nextBadgePoints = Math.ceil((userPoints + 1) / 100) * 100;
+  const progressPercent = Math.min(100, Math.round((userPoints / nextBadgePoints) * 100));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       {/* Welcome Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            Welcome back, {user.name.split(' ')[0]}! 👋
+          <h1 className="text-2xl font-bold tracking-tight">
+            Welcome back, {user?.fullname?.split(' ')[0] || 'Citizen'}! 👋
           </h1>
-          <p className="text-muted-foreground mt-1">
-            Help improve your city by reporting and tracking civic issues.
+          <p className="text-muted-foreground">
+            Your city is currently tracking <span className="text-foreground font-medium">{totalReports}</span> of your reports.
           </p>
         </div>
-        <ReportIssueDialog />
+        <ReportIssueDialog onRefresh={fetchIssues} />
       </div>
 
-      {/* Stats */}
+      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatsCard
-          title="Your Reports"
-          value="12"
-          icon={FileWarning}
-          variant="primary"
-        />
-        <StatsCard
-          title="Resolved"
-          value="8"
-          icon={CheckCircle2}
-          variant="success"
-        />
-        <StatsCard
-          title="Pending"
-          value={pendingIssues.length.toString()}
-          icon={Clock}
-          variant="warning"
-        />
-        <StatsCard
-          title="Civic Points"
-          value={userPoints}
-          icon={TrendingUp}
-          trend={{ value: 12, isPositive: true }}
-        />
+        <StatsCard title="Your Reports" value={totalReports} icon={FileWarning} variant="primary" />
+        <StatsCard title="Resolved" value={resolvedCount} icon={CheckCircle2} variant="success" />
+        <StatsCard title="Pending" value={pendingCount} icon={Clock} variant="warning" />
+        <StatsCard title="Civic Points" value={userPoints} icon={TrendingUp} />
       </div>
 
-      {/* Main Content */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Recent Issues */}
+        {/* Recent Issues Section */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Recent Issues</h2>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/citizen/issues" className="flex items-center gap-1">
-                View All <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              Recent Activity
+            </h2>
+            {totalReports > 0 && (
+              <Button variant="ghost" size="sm" asChild className="text-primary hover:text-primary hover:bg-primary/10">
+                <Link to="/citizen/issues" className="flex items-center gap-1">
+                  View All History <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            )}
           </div>
-          {recentIssues.map((issue) => (
-            <IssueCard key={issue.id} issue={issue} />
-          ))}
+
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 bg-muted/20 rounded-xl border-2 border-dashed">
+              <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+              <p className="text-muted-foreground font-medium">Loading your reports...</p>
+            </div>
+          ) : issues.length > 0 ? (
+            <div className="grid gap-4">
+              {recentIssues.map((issue) => (
+                <IssueCard key={issue.id} issue={issue} onUpvote={() => fetchIssues()} />
+              ))}
+            </div>
+          ) : (
+            <Card className="border-dashed bg-muted/10">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="bg-primary/10 p-4 rounded-full mb-4">
+                  <FileWarning className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold">No issues reported</h3>
+                <p className="text-muted-foreground max-w-[250px] mx-auto mt-2 mb-6">
+                  Ready to make a difference? Report your first civic issue today.
+                </p>
+                <ReportIssueDialog onRefresh={fetchIssues} />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
-        {/* Quick Rewards Overview */}
+        {/* Level & Rewards Sidebar */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Your Rewards</h2>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/citizen/rewards" className="flex items-center gap-1">
-                View All <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          <Card>
+          <h2 className="text-lg font-semibold">Rank & Progress</h2>
+          <Card className="relative overflow-hidden border-primary/20 shadow-lg">
+            {/* Visual background element */}
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl" />
+            
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Civic Points</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Citizen Impact Score</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg">
-                <p className="text-3xl font-bold text-primary">{userPoints}</p>
-                <p className="text-sm text-muted-foreground">Total Points</p>
+            <CardContent className="space-y-6">
+              <div className="flex items-baseline gap-2">
+                <span className="text-5xl font-black text-primary tracking-tighter">{userPoints}</span>
+                <span className="text-sm font-bold text-muted-foreground uppercase">PTS</span>
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Next Badge: Community Hero</span>
-                  <span className="font-medium">{userPoints}/{nextBadgePoints}</span>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
+                  <span className="text-muted-foreground">Next Badge</span>
+                  <span className="text-primary">{userPoints} / {nextBadgePoints}</span>
                 </div>
-                <Progress value={progress} className="h-2" />
+                <Progress value={progressPercent} className="h-3 shadow-inner" />
+                <div className="bg-muted/50 p-3 rounded-lg border border-border/50">
+                  <p className="text-xs leading-relaxed text-muted-foreground italic text-center">
+                    "You're just <span className="font-bold text-foreground">{nextBadgePoints - userPoints} points</span> away from becoming a 
+                    <span className="text-primary font-bold"> Community Hero</span>!"
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </div> 
       </div>
     </div>
   );

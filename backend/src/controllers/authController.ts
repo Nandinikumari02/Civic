@@ -69,3 +69,34 @@ export const login = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Login failed" });
   }
 };
+ // controllers/authController.ts
+export const getMe = async (req: any, res: any) => {
+  try {
+    // Console mein check karo ki ID aa rahi hai ya nahi
+    console.log("User ID from token:", req.user?.id);
+
+    if (!req.user?.id) {
+      return res.status(400).json({ error: "Invalid user data in token" });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        fullname: true,
+        email: true,
+        role: true
+       
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found in database" });
+    }
+
+    res.json(user);
+  } catch (error: any) {
+    console.error("GET_ME_ERROR:", error.message);
+    res.status(500).json({ error: "Internal Server Error", details: error.message });
+  }
+};

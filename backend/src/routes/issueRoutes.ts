@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createIssue, getMyIssues, getDeptIssues, assignIssue,  getIssueTimeline } from "../controllers/issueController";
+import { createIssue, getMyIssues, getDeptIssues, assignIssue,  getIssueTimeline, getAllIssues } from "../controllers/issueController";
 import { authenticate, checkRole } from "../middleware/authMiddleware";
 
 
@@ -18,5 +18,7 @@ router.patch("/assign", authenticate, checkRole(["DEPARTMENT_ADMIN"]), assignIss
 
 // Issue ki history/timeline dekhne ke liye
 router.get("/:id/timeline", authenticate, getIssueTimeline);
+
+router.get("/all", authenticate, checkRole(["SUPER_ADMIN"]), getAllIssues);
 
 export default router;

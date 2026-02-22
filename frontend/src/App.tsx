@@ -14,7 +14,7 @@ import Notifications from './pages/citizen/Notifications';
 
 
 // Departments
-import { DepartmentAdminDashboard } from './pages/departments/DepartmentsDashboard';
+// import { DepartmentAdminDashboard } from './pages/departments/DepartmentsDashboard';
 import DepartmentIssues from './pages/departments/DepartmentIssues';
 import Reports from './pages/departments/Reports';
 import StaffManagement from './pages/departments/StaffManagement';
@@ -25,6 +25,16 @@ import { StaffDashboard } from './pages/staff/StaffDashboard';
 import Completed from './pages/staff/Completed';
 import MyTasks from './pages/staff/MyTasks';
 import TaskMap from './pages/staff/TaskMap';
+import PrivateRoute from './components/auth/PrivateRoute';
+
+//Super Admin
+// import { SuperAdminDashboard } from './pages/superadmin/SuperAdminDashboard';
+// import AllIssues from './pages/superadmin/AllIssues';
+// import Analytics from './pages/superadmin/Analytics';
+// import CityOverview from './pages/superadmin/CityOverview';
+// import UserManagement from './pages/superadmin/UserManagement';
+// import Departments from './pages/superadmin/Departments';
+
 
 
 
@@ -38,28 +48,47 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      <Route path="/citizen" element={<AppLayout />}>
-        <Route index element={<CitizenDashboard />} />
-        <Route path="issues" element={<IssueFeed />} />
-        <Route path="rewards" element={<Rewards />} />
-        <Route path="notifications" element={<Notifications />} />
-    </Route>
+
+    <Route element={<PrivateRoute allowedRoles={['CITIZEN']} />}>
+            <Route path="/citizen" element={<AppLayout />}>
+              <Route index element={<CitizenDashboard />} />
+              <Route path="issues" element={<IssueFeed />} />
+              <Route path="rewards" element={<Rewards />} />
+              <Route path="notifications" element={<Notifications />} />
+            </Route>
+          </Route>
 
 
-      <Route path="/departments" element={<AppLayout />}>
-        <Route index element={<DepartmentAdminDashboard />} />
-        <Route path="department-issues" element={<DepartmentIssues />} />
-        <Route path="reports" element={<Reports />} />
-        <Route path="staff" element={<StaffManagement />} />
-     </Route>
+      <Route element={<PrivateRoute allowedRoles={['DEPARTMENT_ADMIN']} />}>
+            <Route path="/departments" element={<AppLayout />}>
+              <Route path="department-issues" element={<DepartmentIssues />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="staff" element={<StaffManagement />} />
+            </Route>
+          </Route>
 
 
-      <Route path="/staff" element={<AppLayout />}>
-        <Route index element={<StaffDashboard />} />
-        <Route path="completed" element={<Completed />} />
-        <Route path="my-tasks" element={<MyTasks />} />
-        <Route path="task-map" element={<TaskMap />} />
-      </Route>
+     <Route element={<PrivateRoute allowedRoles={['STAFF']} />}>
+            <Route path="/staff" element={<AppLayout />}>
+              <Route index element={<StaffDashboard />} />
+              <Route path="completed" element={<Completed />} />
+              <Route path="my-tasks" element={<MyTasks />} />
+              <Route path="task-map" element={<TaskMap />} />
+            </Route>
+          </Route>
+{/* 
+
+
+      <Route element={<PrivateRoute allowedRoles={['SUPER_ADMIN']} />}>
+        <Route path="/superadmin" element={<AppLayout />}>
+          <Route index element={<SuperAdminDashboard />} />
+          <Route path="/all-issues" element={<AllIssues />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/city-overview" element={<CityOverview />} />
+          <Route path="/user-management" element={<UserManagement />} />
+        <Route path="/departments" element={<Departments />} />
+      </Route> */}
+
     </Routes>
 
     <Toaster position="top-right" richColors />

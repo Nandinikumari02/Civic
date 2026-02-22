@@ -35,7 +35,6 @@ export const createIssue = async (
     data: {
       title: data.title,
       description: data.description,
-      imageUrl: data.imageUrl,
       latitude: data.latitude,
       longitude: data.longitude,
       address: data.address,
@@ -48,7 +47,7 @@ export const createIssue = async (
           {
             status: IssueStatus.SUBMITTED,
             comment: "Issue submitted by citizen",
-            changedBy: citizenUserId,
+            userId: citizenUserId,
           },
         ],
       },

@@ -190,3 +190,22 @@ export const getIssueTimeline = async (req: any, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const getAllIssues = async (req: any, res: Response) => {
+  try {
+    // Sirf metadata aur basic info ke saath saare issues fetch karein
+    const issues = await prisma.issue.findMany({
+      include: {
+        department: { select: { name: true } },
+        category: { select: { name: true } },
+        citizen: { select: { user: { select: { fullname: true } } } },
+        staff: { select: { user: { select: { fullname: true } } } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(issues);
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to fetch all issues: " + error.message });
+  }
+};
