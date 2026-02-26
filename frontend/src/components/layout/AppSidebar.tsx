@@ -1,23 +1,31 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { BarChart3, Bell, Building2, CheckCircle, ClipboardList, FileWarning, Home, LogOut, MapPin,  Settings,  Trophy, Users } from "lucide-react";
-import { useLocation , Link } from 'react-router-dom';
-import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
+import { 
+  BarChart3, Bell, Building2, CheckCircle, ClipboardList, 
+  FileWarning, Home, LogOut, MapPin, Settings, Trophy, Users,LayoutDashboard, PieChart, ShieldAlert, UserCog 
+} from "lucide-react";
+import { useLocation, Link } from 'react-router-dom';
+import { 
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, 
+  SidebarGroupContent, SidebarGroupLabel, SidebarHeader, 
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem 
+} from "../ui/sidebar";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types";
 
 export function AppSidebar({ role: propRole }: { role?: UserRole }) {
-  const { role: contextRole } = useAuth();
+  const { role: contextRole, logout } = useAuth();
+  
+  // Logic fix: Uppercase match karne ke liye
   const role = propRole ?? contextRole;
-
   const location = useLocation();
 
-     
   const citizenLinks = [
-  { title: "Dashboard", icon: Home, url: "/citizen" },
-  { title: "Issue Feed", icon: FileWarning, url: "/citizen/issues" },
-  { title: "Rewards", icon: Trophy, url: "/citizen/rewards" },
-  { title: "Notifications", icon: Bell, url: "/citizen/notifications" },
-];
+    { title: "Dashboard", icon: Home, url: "/citizen" },
+    { title: "Issue Feed", icon: FileWarning, url: "/citizen/issues" },
+    { title: "Rewards", icon: Trophy, url: "/citizen/rewards" },
+    { title: "Notifications", icon: Bell, url: "/citizen/notifications" },
+  ];
+
   const departmentAdminLinks = [
     { title: 'Dashboard', icon: Home, url: '/departments' },
     { title: 'Department Issues', icon: FileWarning, url: '/departments/department-issues' },
@@ -33,50 +41,41 @@ export function AppSidebar({ role: propRole }: { role?: UserRole }) {
   ];
 
   const superAdminLinks = [
-    { title: 'City Overview', icon: MapPin, url: '/superadmin' },
-    { title: 'All Issues', icon: FileWarning, url: '/all-issues' },
-    { title: 'User Management', icon: Users, url: '/users' },
-    { title: 'Departments', icon: Building2, url: '/departments' },
-    { title: 'Analytics', icon: BarChart3, url: '/analytics' },
+    { title: 'City Overview', icon: LayoutDashboard, url: '/superadmin' },
+    { title: 'Departments', icon: Building2, url: '/superadmin/departments' },
+    { title: 'All Issues', icon: ShieldAlert, url: '/superadmin/all-issues' },
+    { title: 'User Management', icon: UserCog, url: '/superadmin/users' },
+    { title: 'Analytics', icon: PieChart, url: '/superadmin/analytics' },
   ];
 
+  // Logic: Switch case strictly using Uppercase as per your types.ts
   const getLinks = () => {
     switch(role) {
-      case 'citizen':
-        return citizenLinks;
-      case 'department_admin':
-        return departmentAdminLinks;
-      case 'staff':
-        return staffLinks;
-      case 'super_admin':
-        return superAdminLinks;
-      default:
-        return citizenLinks;
+      case 'SUPER_ADMIN': return superAdminLinks;
+      case 'CITIZEN': return citizenLinks;
+      case 'DEPARTMENT_ADMIN': return departmentAdminLinks;
+      case 'STAFF': return staffLinks;
+      default: return citizenLinks;
     }
   };
+
   const links = getLinks();
 
   const getRoleLabel = () => {
     switch (role) {
-      case 'citizen':
-        return 'Citizen Portal';
-      case 'department_admin':
-        return 'Department Admin';
-      case 'staff':
-        return 'Field Worker';
-      case 'super_admin':
-        return 'Super Admin';
-      default:
-        return 'Portal';
+      case 'SUPER_ADMIN': return 'Super Administrator';
+      case 'CITIZEN': return 'Citizen Portal';
+      case 'DEPARTMENT_ADMIN': return 'Department Admin';
+      case 'STAFF': return 'Field Worker';
+      default: return 'Portal';
     }
   };
 
-
   return (
-    <Sidebar className="border-r-0 md:border-r ">
-      <SidebarHeader className="p-4 border-b  border-sidebar-border">
-        <div className="flex items-center gap-3  rounded-lg">
-          <div className="h-10 w-10 rounded-lg gradient-primary flex items-center justify-center">
+    <Sidebar className="border-r-0 md:border-r">
+      <SidebarHeader className="p-4 border-b border-sidebar-border">
+        <div className="flex items-center gap-3 rounded-lg">
+          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
             <Building2 className="h-6 w-6 text-white" />
           </div>
           <div>
@@ -101,7 +100,7 @@ export function AppSidebar({ role: propRole }: { role?: UserRole }) {
                       asChild
                       className={cn(
                         'w-full justify-start gap-3 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors',
-                        isActive && 'bg-sidebar-accent text-sidebar-accent-foreground'
+                        isActive && 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
                       )}
                     >
                       <Link to={link.url}>
@@ -120,17 +119,18 @@ export function AppSidebar({ role: propRole }: { role?: UserRole }) {
       <SidebarFooter className="p-2 border-t border-sidebar-border">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="w-full justify-start gap-3 text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+            <SidebarMenuButton className="w-full justify-start gap-3 text-sidebar-foreground/80 hover:bg-sidebar-accent">
               <Settings className="h-4 w-4" />
               <span>Settings</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="w-full justify-start gap-3 text-sidebar-foreground/80 hover:bg-destructive/20 hover:text-destructive-foreground">
-              <Link to="/">
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </Link>
+            <SidebarMenuButton 
+              onClick={() => logout?.()} 
+              className="w-full justify-start gap-3 text-sidebar-foreground/80 hover:text-destructive"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

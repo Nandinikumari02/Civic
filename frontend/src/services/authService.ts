@@ -1,19 +1,38 @@
 import api from './api';
 
+// 1. Pehle ye Interface add karein (Isse error solve ho jayega)
+interface LoginResponse {
+  token: string;
+  user: {
+    id: string;
+    fullname: string;
+    email: string;
+    role: string;
+  };
+}
+
 export const authService = {
-    // 1. Citizen Registration (Backend: /auth/register)
-  register: (userData: any) => api.post('/auth/register' , userData),
+  // Citizen Registration
+  register: (userData: any) => api.post('/auth/register', userData),
 
-    // 2. Login (Backend: /auth/login)
-  login: (credentials: any) => api.post('/auth/login', credentials),
+  // Login (Ab Typescript ko LoginResponse mil jayega)
+  login: async (credentials: any) => {
+    const response = await api.post<LoginResponse>('/auth/login', credentials);
+    
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  },
 
-  //3.Create Staff & Department(Backend: /auth/create-internal-user)
-
+  // Create Staff & Department Admin
   createInternalUser: (userData: any) => api.post('/auth/create-internal-user', userData),
 
+  // Get Profile
   getProfile: () => api.get('/auth/me'),
 
-// 4. Logout (Local logic)
+  // Logout
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');

@@ -1,6 +1,3 @@
-// ===============================
-// Prisma Generator & Datasource
-// ===============================
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,9 +7,136 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ===============================
-// ENUMS
-// ===============================
+model User {
+  id              String           @id @default(uuid())
+  fullname        String
+  email           String           @unique
+  phoneNumber     String           @unique
+  passwordHash    String
+  role            Role
+  createdAt       DateTime         @default(now())
+  citizen         Citizen?
+  departmentAdmin DepartmentAdmin?
+  timelines       IssueTimeline[]
+  notifications   Notification[]
+  rewards         Reward[]
+  staff           Staff?
+}
+
+model Citizen {
+  id     String  @id @default(uuid())
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id])
+  issues Issue[]
+}
+
+model Department {
+  id             String            @id @default(uuid())
+  name           String            @unique
+  description    String?
+  supportedRoles String[]          @default([]) 
+  categories     Category[]
+  admins         DepartmentAdmin[]
+  createdAt       DateTime          @default(now())
+  issues         Issue[]
+  staff          Staff[]
+  tasks          Task[]
+}
+model DepartmentAdmin {
+  id           String     @id @default(uuid())
+  userId       String     @unique
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
+}
+
+model Staff {
+  id           String     @id @default(uuid())
+  userId       String     @unique
+  departmentId String
+  designation  String     @default("Field Staff") 
+  issues       Issue[]
+  department   Department @relation(fields: [departmentId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
+  tasks        Task[]
+}
+
+model Category {
+  id           String     @id @default(uuid())
+  name         String
+  departmentId String
+  department   Department @relation(fields: [departmentId], references: [id])
+  issues       Issue[]
+
+  @@unique([name, departmentId])
+}
+
+model Issue {
+  id           String          @id @default(uuid())
+  title        String
+  description  String
+  status       IssueStatus     @default(OPEN)
+  latitude     Float
+  longitude    Float
+  address      String?
+  citizenId    String
+  departmentId String
+  categoryId   String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  images       String?
+  staffId      String?
+  category     Category        @relation(fields: [categoryId], references: [id])
+  citizen      Citizen         @relation(fields: [citizenId], references: [id])
+  department   Department      @relation(fields: [departmentId], references: [id])
+  staff        Staff?          @relation(fields: [staffId], references: [id])
+  timeline     IssueTimeline[]
+  task         Task?
+}
+
+model IssueTimeline {
+  id        String      @id @default(uuid())
+  issueId   String
+  status    IssueStatus
+  comment   String?
+  createdAt DateTime    @default(now())
+  userId    String
+  issue     Issue       @relation(fields: [issueId], references: [id])
+  changedBy User        @relation(fields: [userId], references: [id])
+}
+
+model Task {
+  id           String     @id @default(uuid())
+  title        String
+  description  String
+  status       TaskStatus @default(PENDING)
+  staffId      String
+  departmentId String
+  issueId      String?    @unique
+  createdAt    DateTime   @default(now())
+  department   Department @relation(fields: [departmentId], references: [id])
+  issue        Issue?     @relation(fields: [issueId], references: [id])
+  staff        Staff      @relation(fields: [staffId], references: [id])
+}
+
+model Reward {
+  id        String   @id @default(uuid())
+  points    Int      @default(0)
+  badgeName String?
+  userId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  message   String
+  isRead    Boolean  @default(false)
+  userId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
 enum Role {
   CITIZEN
   DEPARTMENT_ADMIN
@@ -32,180 +156,4 @@ enum TaskStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
-}
-
-// ===============================
-// USER MODEL
-// ===============================
-model User {
-  id           String @id @default(uuid())
-  fullname     String
-  email        String @unique
-  phoneNumber  String @unique
-  passwordHash String
-  role         Role
-
-  citizen         Citizen?
-  staff           Staff?
-  departmentAdmin DepartmentAdmin?
-
-  rewards       Reward[]
-  notifications Notification[]
-  timelines     IssueTimeline[]
-
-  createdAt DateTime @default(now())
-}
-
-model Citizen {
-  id     String @id @default(uuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
-
-  issues Issue[]
-}
-
-// ===============================
-// DEPARTMENT MODEL
-// ===============================
-
-model Department {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  description String?
-
-  staff      Staff[]
-  admins     DepartmentAdmin[]
-  categories Category[]
-  issues     Issue[]
-  tasks      Task[]
-}
-
-model DepartmentAdmin {
-  id           String @id @default(uuid())
-  userId       String @unique
-  departmentId String
-
-  user       User       @relation(fields: [userId], references: [id])
-  department Department @relation(fields: [departmentId], references: [id])
-}
-
-model Staff {
-  id           String @id @default(uuid())
-  userId       String @unique
-  departmentId String
-
-  user       User       @relation(fields: [userId], references: [id])
-  department Department @relation(fields: [departmentId], references: [id])
-  issues     Issue[]
-  tasks      Task[]
-}
-
-// ===============================
-// CATEGORY MODEL
-// ===============================
-model Category {
-  id           String @id @default(uuid())
-  name         String
-  departmentId String
-
-  department Department @relation(fields: [departmentId], references: [id])
-  issues     Issue[]
-
-  @@unique([name, departmentId])
-}
-
-// ===============================
-// ISSUE MODEL
-// ===============================
-model Issue {
-  id          String      @id @default(uuid())
-  title       String
-  description String
-  status      IssueStatus @default(OPEN)
-  images      String?
-  latitude    Float
-  longitude   Float
-  address     String?
-
-  // Citizen (who raised)
-  citizenId String
-  citizen   Citizen @relation(fields: [citizenId], references: [id])
-
-  // Department & Category
-  departmentId String
-  department   Department @relation(fields: [departmentId], references: [id])
-
-  staffId String? 
-  staff   Staff?  @relation(fields: [staffId], references: [id])
-
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
-
-  task     Task?
-  timeline IssueTimeline[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ===============================
-// ISSUE TIMELINE
-// ===============================
-model IssueTimeline {
-  id      String @id @default(uuid())
-  issueId String
-  issue   Issue  @relation(fields: [issueId], references: [id])
-
-  status    IssueStatus
-  comment   String?
-  userId    String
-  changedBy User        @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
-}
-
-// ===============================
-// TASK MODEL
-// ===============================
-model Task {
-  id          String     @id @default(uuid())
-  title       String
-  description String
-  status      TaskStatus @default(PENDING)
-
-  staffId      String
-  departmentId String
-
-  issueId String? @unique
-
-  staff      Staff      @relation(fields: [staffId], references: [id])
-  department Department @relation(fields: [departmentId], references: [id])
-  issue      Issue?     @relation(fields: [issueId], references: [id])
-
-  createdAt DateTime @default(now())
-}
-
-// ===============================
-// REWARD MODEL
-// ===============================
-model Reward {
-  id        String  @id @default(uuid())
-  points    Int     @default(0)
-  badgeName String?
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
-}
-
-model Notification {
-  id      String  @id @default(uuid())
-  message String
-  isRead  Boolean @default(false)
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
 }

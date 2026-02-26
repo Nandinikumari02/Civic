@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'; // Added useCallback
-import { notificationService } from '@/services/notificationService';
+import { notificationService } from '@/services/notificationService'; // Notification Service 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Bell, Clock, AlertCircle, Award, MessageSquare, Check, Loader2 } from 'lucide-react';

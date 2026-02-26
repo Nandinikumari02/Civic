@@ -9,17 +9,8 @@ import {
   ArrowRight, CheckCircle, Users, Zap 
 } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
-
-// Public registration ke liye sirf Citizen hi kaafi hai
-const roleOptions = [
-  { 
-    value: 'citizen', 
-    label: 'Citizen', 
-    description: 'Report issues and earn rewards', 
-    icon: User 
-  }
-];
+// 1. Service ko import kijiye
+import { authService } from '@/services/authService'; 
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -45,33 +36,37 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // 1. Password Match Validation
+    // 1. Validations
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters');
       return;
     }
 
     setIsLoading(true);
     
     try {
-      // 2. Data Mapping (Backend ke prisma model ke hisaab se)
+      // 2. Data Mapping (Backend logic ke hisaab se)
       const payload = {
-        fullname: formData.name,       // frontend 'name' -> backend 'fullname'
+        fullname: formData.name,
         email: formData.email,
-        phoneNumber: formData.phone,   // frontend 'phone' -> backend 'phoneNumber'
+        phoneNumber: formData.phone,
         password: formData.password,
-        role: 'CITIZEN'                // Direct uppercase string for ENUM
+        role: 'CITIZEN'
       };
 
-      // 3. API Call
-      const response = await axios.post('http://localhost:5000/api/auth/register', payload);
-
-      if (response.status === 201 || response.status === 200) {
-        toast.success('Account created successfully! Please login.');
-        navigate('/login'); 
-      }
+      // 3. Service Call (axios.post ki jagah)
+      await authService.register(payload);
+      // 4. Success handling
+      toast.success('Account created successfully! Please login.');
+      navigate('/login'); 
+      
     } catch (error: any) {
-      // 4. Error handling
+      // 5. Backend error message nikalna
       const message = error.response?.data?.error || "Registration failed. Try again.";
       toast.error(message);
       console.error("Auth Error:", error);
@@ -88,7 +83,7 @@ export default function Register() {
         <div className="w-full max-w-7xl rounded-3xl shadow-2xl p-8 lg:p-12">
           <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
             
-            {/* Left Side - Hero Content */}
+            {/* Left Side - Hero Content (Exactly as you had it) */}
             <div className="flex-1 text-white text-center lg:text-left">
               <div className="flex items-center justify-center lg:justify-start gap-3 mb-8">
                 <div className="h-14 w-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
@@ -118,7 +113,7 @@ export default function Register() {
               </div>
             </div>
 
-            {/* Right Side - Register Form */}
+            {/* Right Side - Register Form (Exactly as you had it) */}
             <div className="w-full max-w-md">
               <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm rounded-3xl">
                 <CardHeader className="text-center pb-2">

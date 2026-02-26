@@ -1,407 +1,373 @@
-// import { useState } from 'react';
-// import { CATEGORY_LABELS, IssueCategory, UserRole } from '@/types';
-// import { AppLayout } from '@/components/layout/AppLayout';
-// import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-// import { Button } from '@/components/ui/button';
-// import { Input } from '@/components/ui/input';
-// import { Label } from '@/components/ui/label';
-// import { Badge } from '@/components/ui/badge';
-// import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-// import {
-//   Table,
-//   TableBody,
-//   TableCell,
-//   TableHead,
-//   TableHeader,
-//   TableRow,
-// } from '@/components/ui/table';
-// import {
-//   Dialog,
-//   DialogContent,
-//   DialogHeader,
-//   DialogTitle,
-//   DialogTrigger,
-//   DialogFooter,
-// } from '@/components/ui/dialog';
-// import {
-//   Select,
-//   SelectContent,
-//   SelectItem,
-//   SelectTrigger,
-//   SelectValue,
-// } from '@/components/ui/select';
-// import {
-//   DropdownMenu,
-//   DropdownMenuContent,
-//   DropdownMenuItem,
-//   DropdownMenuSeparator,
-//   DropdownMenuTrigger,
-// } from '@/components/ui/dropdown-menu';
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-// import {
-//   Users,
-//   Search,
-//   Plus,
-//   MoreHorizontal,
-//   Edit,
-//   Trash2,
-//   UserCheck,
-//   UserX,
-//   Shield,
-//   Briefcase,
-//   Mail,
-//   Phone,
-// } from 'lucide-react';
-// import { useToast } from '@/hooks/use-toast';
-// import { cn } from '@/lib/utils';
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Users, Search, Plus, MoreHorizontal,  Trash2, Mail, Phone, Lock, Eye, EyeOff, Copy, CheckCircle2, ShieldCheck, Loader2, 
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { departmentService } from '@/services/departmentService';
+import { authService } from '@/services/authService'; // ✅ authService use karein
+import api from '@/services/api';
 
-// interface User {
-//   id: string;
-//   name: string;
-//   email: string;
-//   phone: string;
-//   role: UserRole;
-//   department?: string;
-//   status: 'active' | 'inactive';
-//   avatar?: string;
-//   joinedAt: string;
-//   tasksCompleted?: number;
-// }
+interface DeptAdmin {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  departmentName?: string;
+  departmentId?: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+}
 
-// const mockUsers: User[] = [
-//   { id: '1', name: 'Priya Patel', email: 'priya@gov.in', phone: '+91 98765 43210', role: 'department_admin', department: 'Water Supply', status: 'active', joinedAt: '2024-01-15', tasksCompleted: 45 },
-//   { id: '2', name: 'Amit Kumar', email: 'amit@gov.in', phone: '+91 98765 43211', role: 'staff', department: 'Water Supply', status: 'active', joinedAt: '2024-02-20', tasksCompleted: 78 },
-//   { id: '3', name: 'Ravi Singh', email: 'ravi@gov.in', phone: '+91 98765 43212', role: 'staff', department: 'Roads', status: 'active', joinedAt: '2024-01-10', tasksCompleted: 92 },
-//   { id: '4', name: 'Sunita Sharma', email: 'sunita@gov.in', phone: '+91 98765 43213', role: 'department_admin', department: 'Electricity', status: 'active', joinedAt: '2023-11-05', tasksCompleted: 56 },
-//   { id: '5', name: 'Vijay Reddy', email: 'vijay@gov.in', phone: '+91 98765 43214', role: 'staff', department: 'Sanitation', status: 'inactive', joinedAt: '2024-03-01', tasksCompleted: 23 },
-//   { id: '6', name: 'Meera Joshi', email: 'meera@gov.in', phone: '+91 98765 43215', role: 'super_admin', status: 'active', joinedAt: '2023-06-15', tasksCompleted: 120 },
-//   { id: '7', name: 'Rahul Verma', email: 'rahul@example.com', phone: '+91 98765 43216', role: 'citizen', status: 'active', joinedAt: '2024-04-10' },
-//   { id: '8', name: 'Anita Desai', email: 'anita@example.com', phone: '+91 98765 43217', role: 'citizen', status: 'active', joinedAt: '2024-05-20' },
-// ];
+export default function UserManagement() {
+  const { toast } = useToast();
+  const [admins, setAdmins] = useState<DeptAdmin[]>([]);
+  const [availableDepartments, setAvailableDepartments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DeptAdmin | null>(null);
+  const [createdCredentials, setCreatedCredentials] = useState<any | null>(null);
 
-// export default function UserManagement() {
-//   const { toast } = useToast();
-//   const [searchQuery, setSearchQuery] = useState('');
-//   const [roleFilter, setRoleFilter] = useState<string>('all');
-//   const [statusFilter, setStatusFilter] = useState<string>('all');
-//   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newFullName, setNewFullName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newDepartment, setNewDepartment] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
-//   const filteredUsers = mockUsers.filter((user) => {
-//     const matchesSearch = 
-//       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-//       user.email.toLowerCase().includes(searchQuery.toLowerCase());
-//     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-//     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-//     return matchesSearch && matchesRole && matchesStatus;
-//   });
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const deptsRes = await departmentService.getAllDepartments();
+      const departments = deptsRes.data;
+      setAvailableDepartments(departments);
 
-//   const getRoleBadge = (role: UserRole) => {
-//     const styles = {
-//       super_admin: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
-//       department_admin: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
-//       staff: 'bg-green-500/10 text-green-600 border-green-500/30',
-//       citizen: 'bg-gray-500/10 text-gray-600 border-gray-500/30',
-//     };
-//     const labels = {
-//       super_admin: 'Super Admin',
-//       department_admin: 'Dept Admin',
-//       staff: 'Staff',
-//       citizen: 'Citizen',
-//     };
-//     return (
-//       <Badge variant="outline" className={cn('font-medium', styles[role])}>
-//         {labels[role]}
-//       </Badge>
-//     );
-//   };
+      let allAdmins: DeptAdmin[] = [];
+      for (const dept of departments) {
+        const res = await departmentService.getDepartmentAdmins(dept.id);
+        const formatted = res.data.map((admin: any) => ({
+          id: admin.user.id,
+          name: admin.user.fullname,
+          email: admin.user.email,
+          phone: admin.user.phoneNumber,
+          departmentName: dept.name,
+          departmentId: dept.id,
+          status: "active",
+          createdAt: admin.user.createdAt || new Date().toISOString(),
+        }));
+        allAdmins.push(...formatted);
+      }
+      setAdmins(allAdmins);
+    } catch (error: any) {
+      toast({ title: "Sync Failed", description: "Could not load data.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-//   const handleAddUser = () => {
-//     toast({
-//       title: 'User Added',
-//       description: 'New user has been added successfully.',
-//     });
-//     setIsAddDialogOpen(false);
-//   };
+  useEffect(() => { fetchData(); }, []);
 
-//   const handleDeleteUser = (userId: string) => {
-//     toast({
-//       title: 'User Deleted',
-//       description: 'User has been removed from the system.',
-//       variant: 'destructive',
-//     });
-//   };
+  const resetForm = () => {
+    setNewFullName(''); setNewEmail(''); setNewPhone('');
+    setNewPassword(''); setNewDepartment(''); setShowPassword(false);
+  };
 
-//   const stats = {
-//     total: mockUsers.length,
-//     admins: mockUsers.filter(u => u.role === 'super_admin' || u.role === 'department_admin').length,
-//     staff: mockUsers.filter(u => u.role === 'staff').length,
-//     citizens: mockUsers.filter(u => u.role === 'citizen').length,
-//     active: mockUsers.filter(u => u.status === 'active').length,
-//   };
+  const handleAddAdmin = async () => {
+    // 1. Validation logic
+    if (!newFullName.trim() || !newEmail.trim() || !newPassword.trim() || !newDepartment) {
+      toast({ title: 'Validation Error', description: 'Please fill all required fields', variant: 'destructive' });
+      return;
+    }
 
-//   return (
-//     <AppLayout>
-//       <div className="space-y-6">
-//         {/* Header */}
-//         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-//           <div>
-//             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-//               <Users className="h-6 w-6 text-primary" />
-//               User Management
-//             </h1>
-//             <p className="text-muted-foreground mt-1">
-//               Manage all users, roles, and permissions
-//             </p>
-//           </div>
-//           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-//             <DialogTrigger asChild>
-//               <Button className="gap-2">
-//                 <Plus className="h-4 w-4" />
-//                 Add User
-//               </Button>
-//             </DialogTrigger>
-//             <DialogContent className="sm:max-w-[500px]">
-//               <DialogHeader>
-//                 <DialogTitle>Add New User</DialogTitle>
-//               </DialogHeader>
-//               <div className="grid gap-4 py-4">
-//                 <div className="grid gap-2">
-//                   <Label htmlFor="name">Full Name</Label>
-//                   <Input id="name" placeholder="Enter full name" />
-//                 </div>
-//                 <div className="grid gap-2">
-//                   <Label htmlFor="email">Email</Label>
-//                   <Input id="email" type="email" placeholder="Enter email address" />
-//                 </div>
-//                 <div className="grid gap-2">
-//                   <Label htmlFor="phone">Phone</Label>
-//                   <Input id="phone" placeholder="+91 XXXXX XXXXX" />
-//                 </div>
-//                 <div className="grid grid-cols-2 gap-4">
-//                   <div className="grid gap-2">
-//                     <Label>Role</Label>
-//                     <Select>
-//                       <SelectTrigger>
-//                         <SelectValue placeholder="Select role" />
-//                       </SelectTrigger>
-//                       <SelectContent>
-//                         <SelectItem value="department_admin">Dept Admin</SelectItem>
-//                         <SelectItem value="staff">Staff</SelectItem>
-//                         <SelectItem value="citizen">Citizen</SelectItem>
-//                       </SelectContent>
-//                     </Select>
-//                   </div>
-//                   <div className="grid gap-2">
-//                     <Label>Department</Label>
-//                     <Select>
-//                       <SelectTrigger>
-//                         <SelectValue placeholder="Select dept" />
-//                       </SelectTrigger>
-//                       <SelectContent>
-//                         {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-//                           <SelectItem key={key} value={key}>{label}</SelectItem>
-//                         ))}
-//                       </SelectContent>
-//                     </Select>
-//                   </div>
-//                 </div>
-//               </div>
-//               <DialogFooter>
-//                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-//                   Cancel
-//                 </Button>
-//                 <Button onClick={handleAddUser}>Add User</Button>
-//               </DialogFooter>
-//             </DialogContent>
-//           </Dialog>
-//         </div>
+    try {
+      setIsSubmitting(true);
+      
+      // 2. Exact Payload matching your Backend controller
+      const payload = {
+        fullname: newFullName.trim(),
+        email: newEmail.trim(),
+        phoneNumber: newPhone.trim() || "", // Empty string if not provided
+        password: newPassword,
+        departmentId: newDepartment,
+        role: 'DEPARTMENT_ADMIN', // Must match Enum
+      };
 
-//         {/* Stats */}
-//         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-//           <Card>
-//             <CardContent className="p-4 text-center">
-//               <p className="text-2xl font-bold">{stats.total}</p>
-//               <p className="text-sm text-muted-foreground">Total Users</p>
-//             </CardContent>
-//           </Card>
-//           <Card>
-//             <CardContent className="p-4 text-center">
-//               <p className="text-2xl font-bold text-purple-600">{stats.admins}</p>
-//               <p className="text-sm text-muted-foreground">Admins</p>
-//             </CardContent>
-//           </Card>
-//           <Card>
-//             <CardContent className="p-4 text-center">
-//               <p className="text-2xl font-bold text-green-600">{stats.staff}</p>
-//               <p className="text-sm text-muted-foreground">Staff</p>
-//             </CardContent>
-//           </Card>
-//           <Card>
-//             <CardContent className="p-4 text-center">
-//               <p className="text-2xl font-bold text-blue-600">{stats.citizens}</p>
-//               <p className="text-sm text-muted-foreground">Citizens</p>
-//             </CardContent>
-//           </Card>
-//           <Card>
-//             <CardContent className="p-4 text-center">
-//               <p className="text-2xl font-bold text-success">{stats.active}</p>
-//               <p className="text-sm text-muted-foreground">Active</p>
-//             </CardContent>
-//           </Card>
-//         </div>
+      // 3. Using authService for consistent API calls
+      await authService.createInternalUser(payload);
 
-//         {/* Filters */}
-//         <Card>
-//           <CardContent className="p-4">
-//             <div className="flex flex-col lg:flex-row gap-4">
-//               <div className="relative flex-1">
-//                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-//                 <Input
-//                   placeholder="Search by name or email..."
-//                   value={searchQuery}
-//                   onChange={(e) => setSearchQuery(e.target.value)}
-//                   className="pl-9"
-//                 />
-//               </div>
-//               <div className="flex gap-2">
-//                 <Select value={roleFilter} onValueChange={setRoleFilter}>
-//                   <SelectTrigger className="w-[140px]">
-//                     <SelectValue placeholder="Role" />
-//                   </SelectTrigger>
-//                   <SelectContent>
-//                     <SelectItem value="all">All Roles</SelectItem>
-//                     <SelectItem value="super_admin">Super Admin</SelectItem>
-//                     <SelectItem value="department_admin">Dept Admin</SelectItem>
-//                     <SelectItem value="staff">Staff</SelectItem>
-//                     <SelectItem value="citizen">Citizen</SelectItem>
-//                   </SelectContent>
-//                 </Select>
-//                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-//                   <SelectTrigger className="w-[130px]">
-//                     <SelectValue placeholder="Status" />
-//                   </SelectTrigger>
-//                   <SelectContent>
-//                     <SelectItem value="all">All Status</SelectItem>
-//                     <SelectItem value="active">Active</SelectItem>
-//                     <SelectItem value="inactive">Inactive</SelectItem>
-//                   </SelectContent>
-//                 </Select>
-//               </div>
-//             </div>
-//           </CardContent>
-//         </Card>
+      setCreatedCredentials({
+        name: payload.fullname,
+        email: payload.email,
+        password: payload.password,
+        department: availableDepartments.find(d => d.id === newDepartment)?.name || "Assigned Dept",
+      });
 
-//         {/* Users Table */}
-//         <Card>
-//           <CardContent className="p-0">
-//             <Table>
-//               <TableHeader>
-//                 <TableRow>
-//                   <TableHead>User</TableHead>
-//                   <TableHead>Contact</TableHead>
-//                   <TableHead>Role</TableHead>
-//                   <TableHead>Department</TableHead>
-//                   <TableHead>Status</TableHead>
-//                   <TableHead>Tasks</TableHead>
-//                   <TableHead className="text-right">Actions</TableHead>
-//                 </TableRow>
-//               </TableHeader>
-//               <TableBody>
-//                 {filteredUsers.map((user) => (
-//                   <TableRow key={user.id}>
-//                     <TableCell>
-//                       <div className="flex items-center gap-3">
-//                         <Avatar className="h-9 w-9">
-//                           <AvatarImage src={user.avatar} />
-//                           <AvatarFallback className="bg-primary/10 text-primary text-sm">
-//                             {user.name.split(' ').map(n => n[0]).join('')}
-//                           </AvatarFallback>
-//                         </Avatar>
-//                         <div>
-//                           <p className="font-medium">{user.name}</p>
-//                           <p className="text-xs text-muted-foreground">
-//                             Joined {new Date(user.joinedAt).toLocaleDateString()}
-//                           </p>
-//                         </div>
-//                       </div>
-//                     </TableCell>
-//                     <TableCell>
-//                       <div className="space-y-1">
-//                         <p className="text-sm flex items-center gap-1">
-//                           <Mail className="h-3 w-3 text-muted-foreground" />
-//                           {user.email}
-//                         </p>
-//                         <p className="text-xs text-muted-foreground flex items-center gap-1">
-//                           <Phone className="h-3 w-3" />
-//                           {user.phone}
-//                         </p>
-//                       </div>
-//                     </TableCell>
-//                     <TableCell>{getRoleBadge(user.role)}</TableCell>
-//                     <TableCell>
-//                       {user.department ? (
-//                         <Badge variant="secondary">{user.department}</Badge>
-//                       ) : (
-//                         <span className="text-muted-foreground text-sm">-</span>
-//                       )}
-//                     </TableCell>
-//                     <TableCell>
-//                       <Badge
-//                         variant="outline"
-//                         className={cn(
-//                           user.status === 'active'
-//                             ? 'bg-success/10 text-success border-success/30'
-//                             : 'bg-muted text-muted-foreground'
-//                         )}
-//                       >
-//                         {user.status === 'active' ? (
-//                           <><UserCheck className="h-3 w-3 mr-1" /> Active</>
-//                         ) : (
-//                           <><UserX className="h-3 w-3 mr-1" /> Inactive</>
-//                         )}
-//                       </Badge>
-//                     </TableCell>
-//                     <TableCell>
-//                       {user.tasksCompleted !== undefined ? (
-//                         <span className="font-medium">{user.tasksCompleted}</span>
-//                       ) : (
-//                         <span className="text-muted-foreground">-</span>
-//                       )}
-//                     </TableCell>
-//                     <TableCell className="text-right">
-//                       <DropdownMenu>
-//                         <DropdownMenuTrigger asChild>
-//                           <Button variant="ghost" size="icon" className="h-8 w-8">
-//                             <MoreHorizontal className="h-4 w-4" />
-//                           </Button>
-//                         </DropdownMenuTrigger>
-//                         <DropdownMenuContent align="end">
-//                           <DropdownMenuItem className="gap-2">
-//                             <Edit className="h-4 w-4" />
-//                             Edit User
-//                           </DropdownMenuItem>
-//                           <DropdownMenuItem className="gap-2">
-//                             <Shield className="h-4 w-4" />
-//                             Change Role
-//                           </DropdownMenuItem>
-//                           <DropdownMenuSeparator />
-//                           <DropdownMenuItem 
-//                             className="gap-2 text-destructive"
-//                             onClick={() => handleDeleteUser(user.id)}
-//                           >
-//                             <Trash2 className="h-4 w-4" />
-//                             Delete User
-//                           </DropdownMenuItem>
-//                         </DropdownMenuContent>
-//                       </DropdownMenu>
-//                     </TableCell>
-//                   </TableRow>
-//                 ))}
-//               </TableBody>
-//             </Table>
-//           </CardContent>
-//         </Card>
-//       </div>
-//     </AppLayout>
-//   );
-// }
+      toast({ title: 'Success', description: 'Department Admin created successfully' });
+      setIsAddDialogOpen(false);
+      resetForm();
+      fetchData(); 
+    } catch (error: any) {
+      // 4. Detailed Error Debugging
+      console.error("DEBUG_ADD_ADMIN_ERROR:", error.response?.data);
+      
+      const serverError = error.response?.data?.error || error.response?.data?.message;
+      
+      toast({
+        title: "Creation Failed",
+        description: serverError || "Check if email/phone already exists or if fields are valid.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // ... (Baki functions like handleDeleteAdmin and getInitials same rahenge)
+
+  const handleDeleteAdmin = async () => {
+    if (!deleteTarget) return;
+    try {
+      await api.delete(`/users/${deleteTarget.id}`);
+      toast({ title: 'Deleted', description: 'Admin removed successfully', variant: 'destructive' });
+      fetchData();
+    } catch (error) {
+      toast({ title: 'Error', description: "Action failed", variant: "destructive" });
+    }
+    setDeleteTarget(null);
+  };
+
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return parts[0][0]?.toUpperCase() || 'A';
+  };
+
+  const filteredAdmins = admins.filter((admin) =>
+    admin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    admin.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (admin.departmentName && admin.departmentName.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const stats = {
+    totalAdmins: admins.length,
+    activeDepts: new Set(admins.map((a) => a.departmentId)).size,
+  };
+
+  return (
+      <div className="space-y-6 p-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <ShieldCheck className="h-6 w-6 text-primary" />
+              Department Admins
+            </h1>
+            <p className="text-muted-foreground mt-1">Manage HOD accounts and department access.</p>
+          </div>
+          <Dialog open={isAddDialogOpen} onOpenChange={(open) => { setIsAddDialogOpen(open); if (!open) resetForm(); }}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" /> Create Dept Admin
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Add New Admin</DialogTitle>
+                <DialogDescription>Link a user to a specific government department.</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label>Full Name *</Label>
+                  <Input placeholder="e.g. Rajesh Kumar" value={newFullName} onChange={(e) => setNewFullName(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Email Address *</Label>
+                  <Input type="email" placeholder="rajesh@gov.in" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Phone</Label>
+                  <Input placeholder="+91 98765 43210" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label className="flex items-center gap-1"><Lock className="h-3 w-3"/> Password *</Label>
+                  <div className="relative">
+                    <Input type={showPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="pr-10" />
+                    <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-full px-3 hover:bg-transparent" onClick={() => setShowPassword(!showPassword)}>
+                      {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Assign Department *</Label>
+                  <Select value={newDepartment} onValueChange={setNewDepartment}>
+                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectContent>
+                      {availableDepartments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleAddAdmin} disabled={isSubmitting}>
+                  {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Confirm Create
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Success Modal */}
+        <Dialog open={!!createdCredentials} onOpenChange={() => setCreatedCredentials(null)}>
+          <DialogContent className="sm:max-w-[420px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-primary">
+                <CheckCircle2 className="h-5 w-5" /> Account Created
+              </DialogTitle>
+            </DialogHeader>
+            {createdCredentials && (
+              <div className="space-y-4 py-4">
+                <div className="bg-muted rounded-lg p-4 space-y-2 font-mono text-sm border">
+                  <div className="flex justify-between border-b pb-1"><span>Dept:</span><span className="font-bold">{createdCredentials.department}</span></div>
+                  <div className="flex justify-between border-b pb-1"><span>User:</span><span className="font-bold">{createdCredentials.email}</span></div>
+                  <div className="flex justify-between"><span>Pass:</span><span className="font-bold">{createdCredentials.password}</span></div>
+                </div>
+                <Button className="w-full gap-2" variant="secondary" onClick={() => {
+                  navigator.clipboard.writeText(`Email: ${createdCredentials.email}\nPass: ${createdCredentials.password}`);
+                  toast({ title: 'Copied!' });
+                }}>
+                  <Copy className="h-4 w-4" /> Copy Login Info
+                </Button>
+              </div>
+            )}
+            <DialogFooter><Button onClick={() => setCreatedCredentials(null)}>Close</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Search */}
+        <Card className="border-none shadow-sm">
+          <CardContent className="p-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Filter by name, email or department..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 bg-muted/50" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Table */}
+        <Card>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Fetching administrators...</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead>Admin Identity</TableHead>
+                    <TableHead>Contact Detail</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Manage</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAdmins.map((admin) => (
+                    <TableRow key={admin.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10 border">
+                            <AvatarFallback className="bg-primary/10 text-primary font-bold">{getInitials(admin.name)}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-sm">{admin.name}</span>
+                            <span className="text-[10px] text-muted-foreground">Joined {new Date(admin.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col text-xs gap-1">
+                          <span className="flex items-center gap-1 text-muted-foreground"><Mail className="h-3 w-3" /> {admin.email}</span>
+                          {admin.phone && <span className="flex items-center gap-1 text-muted-foreground"><Phone className="h-3 w-3" /> {admin.phone}</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell><Badge variant="outline">{admin.departmentName}</Badge></TableCell>
+                      <TableCell><Badge className="bg-emerald-500/10 text-emerald-600">Active</Badge></TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => setDeleteTarget(admin)}>
+                              <Trash2 className="h-4 w-4 text-destructive" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Delete Dialog */}
+        <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-destructive">Confirm Deletion</DialogTitle>
+              <DialogDescription>Are you sure you want to remove <strong>{deleteTarget?.name}</strong>?</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+              <Button variant="destructive" onClick={handleDeleteAdmin}>Delete</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+  );
+}

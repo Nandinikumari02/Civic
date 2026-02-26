@@ -7,21 +7,23 @@ interface ResolutionRateBarProps {
 }
 
 export function ResolutionRateBar({ name, resolved, total }: ResolutionRateBarProps) {
-  const rate = Math.round((resolved / total) * 100);
+  // Real Data Fix: Total 0 hone par NaN se bachne ke liye check
+  const rate = total > 0 ? Math.round((resolved / total) * 100) : 0;
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="font-medium">{name}</span>
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm font-medium">{name}</span>
+        <span className="text-[10px] font-mono text-muted-foreground">
           {resolved}/{total} ({rate}%)
         </span>
       </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden">
+      <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
         <div
           className={cn(
-            'h-full rounded-full transition-all',
-            rate >= 80 ? 'bg-success' : rate >= 60 ? 'bg-warning' : 'bg-destructive'
+            'h-full rounded-full transition-all duration-500 ease-in-out',
+            // Colors fallback (Agar success/warning define nahi hain)
+            rate >= 80 ? 'bg-green-500' : rate >= 60 ? 'bg-amber-500' : 'bg-red-500'
           )}
           style={{ width: `${rate}%` }}
         />
@@ -31,20 +33,29 @@ export function ResolutionRateBar({ name, resolved, total }: ResolutionRateBarPr
 }
 
 interface ResolutionRatesListProps {
-  items: Array<{ name: string; resolved: number; issues: number }>;
+  // Backend raw data handle karne ke liye generic type
+  items: any[]; 
 }
 
 export function ResolutionRatesList({ items }: ResolutionRatesListProps) {
   return (
-    <div className="space-y-4">
-      {items.map((item) => (
-        <ResolutionRateBar
-          key={item.name}
-          name={item.name}
-          resolved={item.resolved}
-          total={item.issues}
-        />
-      ))}
+    <div className="space-y-5">
+      {items && items.length > 0 ? (
+        items.map((item, index) => (
+          <ResolutionRateBar
+            // Key safety: name ke sath index use karna best hai
+            key={`${item.name}-${index}`}
+            name={item.name}
+            // Prisma mapping compatibility check
+            resolved={item.resolved ?? item.resolvedCount ?? 0}
+            total={item._count?.issues ?? item.issues ?? item.total ?? 0}
+          />
+        ))
+      ) : (
+        <div className="py-8 text-center border rounded-lg border-dashed">
+           <p className="text-xs text-muted-foreground italic">No resolution data available</p>
+        </div>
+      )}
     </div>
   );
 }

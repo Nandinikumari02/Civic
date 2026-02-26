@@ -1,5 +1,6 @@
 import { Shield } from "lucide-react";
 import { Button } from "../ui/button";
+import { Link } from "react-router-dom";
 
 export const Navbar = () => {
   const navLinks = [
@@ -51,12 +52,17 @@ export const Navbar = () => {
 
           {/* Auth Buttons */}
           <div className="flex items-center space-x-6">
+            <Link to="/login">
             <button className="text-sm font-medium text-foreground transition-colors hover:text-primary">
               Login
             </button>
+            </Link>
+
+            <Link to="/register">
             <Button className="text-sm font-semibold px-7 py-2 rounded-xl transition-transform duration-200 hover:scale-105">
               Register
             </Button>
+            </Link>
           </div>
 
         </div>

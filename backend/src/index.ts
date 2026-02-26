@@ -7,6 +7,7 @@ import issueRoutes from './routes/issueRoutes';
 import taskRoutes from "./routes/taskRoutes";
 import notificationRoutes from './routes/notificationRoutes';
 import rewardRoutes from './routes/rewardRoutes';
+import dashboardRoutes from './routes/dashboardRoutes';
 
 
 dotenv.config();
@@ -24,6 +25,7 @@ app.use('/api/issues', issueRoutes);
 app.use("/api/tasks" , taskRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/rewards", rewardRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 
 

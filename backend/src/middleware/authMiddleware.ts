@@ -25,13 +25,18 @@ export const checkRole = (roles: string[]) => {
 
 export const protect = async (req: any, res: any, next: any) => {
   let token = req.headers.authorization?.split(" ")[1];
-
   if (!token) return res.status(401).json({ error: "Not authorized" });
 
   try {
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-    // Yahan check kijiye ki 'userId' ya 'id' kya bhej rahe hain aap payload mein
-    req.user = { id: decoded.userId || decoded.id }; 
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'your_secret_key');
+    
+    // Normalize: userId ko id mein convert karo taaki controller crash na ho
+    req.user = {
+      ...decoded,
+      id: decoded.userId || decoded.id,
+      role: decoded.role
+    };
+
     next();
   } catch (error) {
     res.status(401).json({ error: "Token failed" });

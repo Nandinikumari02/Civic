@@ -7,26 +7,33 @@ interface AuthContextType {
   role: UserRole | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  switchRole: (newRole: UserRole) => void; // Ab red line nahi aayegi
-  isLoading: boolean; // Loading state check karne ke liye
+  switchRole: (newRole: UserRole) => void;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    // Initial load par localStorage se user nikalne ki koshish karein
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
-  const [isLoading, setIsLoading] = useState(true); // Initial loading true
+  const [isLoading, setIsLoading] = useState(true);
 
   const role = user?.role ?? null;
 
   // Role badalne ka function (AppLayout ke liye)
   const switchRole = useCallback((newRole: UserRole) => {
     if (user && user.role !== newRole) {
-      setUser({ ...user, role: newRole });
+      const updatedUser = { ...user, role: newRole };
+      setUser(updatedUser);
+      localStorage.setItem("user", JSON.stringify(updatedUser));
     }
   }, [user]);
 
+  // Auth Sync: Check current user status
   useEffect(() => {
     const fetchUser = async () => {
       if (token) {
@@ -38,23 +45,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = await res.json();
           
           if (res.ok) {
-            // BACKEND FIX: Agar backend seedha object bhej raha hai toh data use karein
-            // Agar backend { user: {...} } bhej raha hai toh data.user use karein
-            setUser(data.user || data); 
+            const userToSet = data.user || data;
+            setUser(userToSet);
+            localStorage.setItem("user", JSON.stringify(userToSet));
           } else {
             logout();
           }
         } catch (error) {
-          console.error("Auth Error:", error);
+          console.error("Auth Sync Error:", error);
           logout();
         }
       }
-      setIsLoading(false); // Data fetch hone ke baad loading false
+      setIsLoading(false);
     };
 
     fetchUser();
   }, [token]);
 
+  // Login Function (FIXED)
   const login = async (email: string, password: string) => {
     const res = await fetch("http://localhost:5000/api/auth/login", {
       method: "POST",
@@ -66,20 +74,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!res.ok) throw new Error(data.error || "Login failed");
 
     const userToSet = data.user || data;
+    
+    // Sab kuch sync mein save karein
     setToken(data.token);
-    localStorage.setItem("token", data.token);
     setUser(userToSet);
+    
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(userToSet)); // ✅ Ye line zaroori hai
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
+    localStorage.removeItem("user"); // ✅ Dono saaf karein
   };
 
   return (
     <AuthContext.Provider value={{ user, token, role, login, logout, switchRole, isLoading }}>
-      {children}
+      {!isLoading ? children : (
+        <div className="h-screen w-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }

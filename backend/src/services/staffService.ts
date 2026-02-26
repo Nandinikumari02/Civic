@@ -11,25 +11,36 @@ export const getMyTasks = async (userId: string) => {
   return prisma.issue.findMany({
     where: { staffId: staff.id },
     include: {
-      citizen: { include: { user: true } },
+      citizen: { 
+        include: { 
+          user: { select: { fullname: true, phoneNumber: true } } 
+        } 
+      },
       category: true,
-      department: true,
-      timeline: true,
+      department: { select: { name: true } },
+      timeline: { orderBy: { createdAt: 'desc' } },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { updatedAt: "desc" }, // Taaki latest update wala kaam upar dikhe
   });
 };
 
 export const updateIssueStatus = async (
   issueId: string,
   status: IssueStatus,
-  userId: string
+  userId: string // Ye login user ki ID hai (Auth Middleware se)
 ) => {
   const staff = await prisma.staff.findUnique({
     where: { userId },
   });
 
   if (!staff) throw new Error("Staff not found");
+
+  // Security Check: Kya ye issue isi staff ko assigned hai?
+  const issue = await prisma.issue.findFirst({
+    where: { id: issueId, staffId: staff.id }
+  });
+
+  if (!issue) throw new Error("This issue is not assigned to you.");
 
   return prisma.issue.update({
     where: { id: issueId },
@@ -38,8 +49,8 @@ export const updateIssueStatus = async (
       timeline: {
         create: {
           status,
-          changedBy: staff.id,
-          comment: `Status updated to ${status}`,
+          userId: userId, // ✅ FIX: Schema ke hisaab se yahan user.id jayegi (staff.id nahi)
+          comment: `Status updated to ${status} by ${staff.designation}`, // Designation add kar di
         },
       },
     },
@@ -48,13 +59,21 @@ export const updateIssueStatus = async (
 
 export const markIssueCompleted = async (
   issueId: string,
-  userId: string
+  userId: string,
+  comment?: string // Optional comment taaki staff bata sake kya kaam kiya
 ) => {
   const staff = await prisma.staff.findUnique({
     where: { userId },
   });
 
   if (!staff) throw new Error("Staff not found");
+
+  // Security Check
+  const issue = await prisma.issue.findFirst({
+    where: { id: issueId, staffId: staff.id }
+  });
+
+  if (!issue) throw new Error("Unauthorized: Issue assignment mismatch.");
 
   return prisma.issue.update({
     where: { id: issueId },
@@ -63,8 +82,8 @@ export const markIssueCompleted = async (
       timeline: {
         create: {
           status: "RESOLVED",
-          changedBy: staff.id,
-          comment: "Marked completed by staff",
+          userId: userId, // ✅ FIX: user.id use karni hai
+          comment: comment || `Marked as resolved by ${staff.designation}`,
         },
       },
     },

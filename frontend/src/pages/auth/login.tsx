@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {  Mail, Lock, Eye, EyeOff, ArrowRight, Shield, CheckCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
+// 1. AuthContext se useAuth import karein
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -14,55 +15,50 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
- 
+  
+  // 2. Context se login function nikalen
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
     try {
-      // 1. Backend API Call
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
-        email,
-        password
-      });
+      // 3. Context wala login call karein (Ye state aur localStorage dono update karega)
+      await login(email, password);
 
-      // 2. Data Destructuring (Token aur User info nikaalna)
-      const { token, role , fullname } = response.data;
+      // 4. Data check karein redirection ke liye (LocalStorage se role nikalna sabse safe hai)
+      const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const role = storedUser.role;
+      const fullname = storedUser.fullname || 'User';
 
-      // 3. STORAGE: Token aur User info ko browser mein save karna
-      const userData = { token, role, fullname };
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
-
-
-      // 4. TOAST: Success message
       toast.success(`Welcome back, ${fullname}!`);
 
-      // 5. REDIRECT: Role ke hisaab se sahi page par bhejna
-      // Note: Backend se Roles 'CITIZEN', 'STAFF', 'DEPARTMENT_ADMIN', 'SUPER_ADMIN' aate hain
-      switch (role) {
-        case 'CITIZEN':
-          navigate('/citizen');
-          break;
-        case 'STAFF':
-          navigate('/staff');
-          break;
-        case 'DEPARTMENT_ADMIN':
-          navigate('/departments');
-          break;
-        case 'SUPER_ADMIN':
-          navigate('/superadmin'); // App.tsx mein yahi path hai
-          break;
-        default:
-          navigate('/');
-      }
+      // 5. REDIRECT Logic
+      // Thoda sa delay (50ms) de rahe hain taaki Context state stable ho jaye
+      setTimeout(() => {
+        switch (role) {
+          case 'CITIZEN': 
+            navigate('/citizen'); 
+            break;
+          case 'STAFF': 
+            navigate('/staff'); 
+            break;
+          case 'DEPARTMENT_ADMIN': 
+            navigate('/departments'); 
+            break;
+          case 'SUPER_ADMIN': 
+            navigate('/superadmin'); 
+            break;
+          default: 
+            navigate('/');
+        }
+      }, 50);
 
     } catch (error: any) {
-      // 6. ERROR HANDLING
-      const message = error.response?.data?.error || "Invalid email or password";
+      // Error message handling
+      const message = error.message || "Invalid email or password";
       toast.error(message);
-      console.error("Login Error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -75,12 +71,11 @@ export default function Login() {
       
       {/* Content Container */}
       <div className="relative z-10 min-h-screen  flex items-center justify-center p-6">
-        <div className="w-full max-w-7xl t rounded-3xl shadow-2xl p-8 lg:p-12">
+        <div className="w-full max-w-7xl rounded-3xl shadow-2xl p-8 lg:p-12">
         <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
           
           {/* Left Side - Hero Content */}
           <div className="flex-1 text-white text-center lg:text-left">
-            {/* Logo */}
             <div className="flex items-center justify-center lg:justify-start gap-3 mb-8">
               <div className="h-14 w-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
                 <Shield className="h-8 w-8 text-white" />
@@ -88,7 +83,6 @@ export default function Login() {
               <span className="text-4xl font-bold">Civic Sarthi</span>
             </div>
 
-            {/* Hero Content */}
             <h1 className="text-4xl lg:text-5xl font-bold mb-4">
               Your City, Your Voice
             </h1>
@@ -96,7 +90,6 @@ export default function Login() {
               Report civic issues, track resolutions, and build a better community together.
             </p>
 
-            {/* Features - Hidden on mobile */}
             <div className="hidden lg:block space-y-4 mb-8">
               {[
                 'Report issues in seconds with photo evidence',
@@ -104,16 +97,13 @@ export default function Login() {
                 'Earn rewards for civic participation',
               ].map((feature, index) => (
                 <div key={index} className="flex items-center gap-3">
-                  <div className="h-6 w-6 rounded-full bg-success/20 flex items-center justify-center">
-                    <CheckCircle className="h-4 w-4 text-success" />
+                  <div className="h-6 w-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <CheckCircle className="h-4 w-4 text-emerald-400" />
                   </div>
                   <span className="text-white/90">{feature}</span>
                 </div>
               ))}
             </div>
-
-           
-            
           </div>
 
           {/* Right Side - Login Form */}
@@ -202,8 +192,6 @@ export default function Login() {
                     Create account
                   </Link>
                 </div>
-
-               
               </CardContent>
             </Card>
 

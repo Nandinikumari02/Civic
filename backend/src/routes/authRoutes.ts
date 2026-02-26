@@ -12,6 +12,7 @@ router.post('/login', login);
 router.post(
     '/create-internal-user', 
     authenticate, 
+    protect,
     checkRole(['SUPER_ADMIN', 'DEPARTMENT_ADMIN']), 
     createStaffOrAdmin
 );
